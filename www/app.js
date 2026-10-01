@@ -5,7 +5,7 @@ const DECKS = window.WORD_DECKS;
 const LESSONS = window.GRAMMAR;
 
 /* ================= 进度存储 ================= */
-const KEY = "eb_progress_v1";
+const KEY = "eb_progress_v2";
 let P = load();
 function load(){ try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s && s.v===1) return s; }catch(e){} return fresh(); }
 function fresh(){ return {v:1, box:{}, last:{}, bestWQ:{}, bestGQ:{}, wrongW:[], wrongG:[], days:{}}; }
@@ -17,6 +17,35 @@ function touchDay(){ P.days[todayStr()]=1; save(); }
 function $(s){ return document.querySelector(s); }
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+/* ================= 小可爱动效 ================= */
+const PRAISE=["太棒了！🎉","答对啦！⭐","你真聪明！💖","完美！🌈","无敌！✨","超厉害！🎊"];
+const COMFORT=["没关系，加油！💪","差一点点！🍀","记住它，下次一定对！📝","别灰心，你可以的！🌻"];
+function pickCute(a){ return a[Math.floor(Math.random()*a.length)]; }
+function boomConfetti(n){
+  let c=document.getElementById("confetti");
+  if(!c){ c=document.createElement("div"); c.id="confetti"; document.body.appendChild(c); }
+  const emo=["⭐","🎉","💖","✨","🌈","🎊","💫","🍬","🌸"];
+  for(let k=0;k<n;k++){
+    const s=document.createElement("span"); s.className="cf";
+    s.textContent=emo[Math.floor(Math.random()*emo.length)];
+    s.style.left=(Math.random()*100)+"vw";
+    s.style.animationDuration=(1.1+Math.random()*1.4)+"s";
+    s.style.fontSize=(15+Math.random()*15)+"px";
+    c.appendChild(s);
+    (function(el){ setTimeout(function(){ el.remove(); },2800); })(s);
+  }
+}
+function floatPlus(el){
+  try{
+    const r=el.getBoundingClientRect();
+    const s=document.createElement("span"); s.className="float-plus"; s.textContent="+1 ⭐";
+    s.style.left=(r.left+r.width/2-24)+"px"; s.style.top=(r.top-8+window.scrollY)+"px";
+    document.body.appendChild(s);
+    setTimeout(function(){ s.remove(); },1050);
+  }catch(e){}
+}
+function totalWords(){ return DECKS.reduce(function(a,d){ return a+d.words.length; },0); }
 function wid(deckId,i){ return deckId+":"+i; }
 function getDeck(id){ return DECKS.find(function(d){return d.id===id;}); }
 function getLesson(id){ return LESSONS.find(function(l){return l.id===id;}); }
@@ -122,7 +151,7 @@ function showDecks(){
       '<div class="progress"><div style="width:'+pct+'%"></div></div></div>'+
       '<span class="arrow">›</span></div>';
   }).join("");
-  resetTo('<div class="page-title">单词</div><div class="sub">10 个主题词书 · 共 200 词 · 闪卡 + 测验</div>'+html,
+  resetTo('<div class="page-title">单词</div><div class="sub">'+DECKS.length+' 个主题词书 · 共 '+totalWords()+' 词 · 闪卡 + 测验</div><div class="deck-grid">'+html+'</div>',
   function(root){
     root.querySelectorAll(".item").forEach(function(el){ el.onclick=function(){ showDeckDetail(el.dataset.id); }; });
   });
@@ -225,10 +254,16 @@ function runQuiz(cfg){
   const total=cfg.questions.length;
   function renderQ(){
     const Q=cfg.questions[i];
-    const opts=Q.options.map(function(o,oi){ return '<button class="opt" data-i="'+oi+'">'+esc(o)+'</button>'; }).join("");
+    const pct0=Math.round(i/total*100);
+    const opts=Q.options.map(function(o,oi){ return '<button class="opt" data-i="'+oi+'" style="animation-delay:'+(oi*70)+'ms">'+esc(o)+'</button>'; }).join("");
     goReplace('<button class="back" id="bk">‹ 退出测验</button>'+
       '<div class="page-title">'+esc(cfg.title)+'</div>'+
-      '<div class="quiz-sub">第 '+(i+1)+' / '+total+' 题'+(cfg.sub?' · '+esc(cfg.sub):'')+'</div>'+
+      '<div class="quiz-top">'+
+        '<div class="quiz-pet" id="qpet"><div class="pet-body"><div class="pet-eye left"></div><div class="pet-eye right"></div><div class="pet-blush left"></div><div class="pet-blush right"></div><div class="pet-mouth"></div></div></div>'+
+        '<div class="grow"><div class="quiz-sub" style="margin:0">第 '+(i+1)+' / '+total+' 题'+(cfg.sub?' · '+esc(cfg.sub):'')+'</div>'+
+        '<div class="quiz-progress"><div class="fill" style="width:'+pct0+'%"></div><div class="paw" style="left:'+pct0+'%">🐾</div></div></div>'+
+      '</div>'+
+      '<div class="cheer" id="cheer"></div>'+
       '<div class="card"><div class="quiz-q">'+esc(Q.q)+'</div>'+(Q.hint?'<div class="quiz-sub" style="margin:6px 0 0">'+esc(Q.hint)+'</div>':'')+'</div>'+
       '<div id="opts">'+opts+'</div><div id="exp"></div>'+
       '<button class="btn btn-primary" id="next" style="display:none;margin-top:6px">'+(i+1<total?'下一题':'查看结果')+'</button>',
@@ -239,12 +274,23 @@ function runQuiz(cfg){
         btn.onclick=function(){
           if(answered) return; answered=true;
           const pick=+btn.dataset.i;
+          const pet=$("#qpet"), cheer=$("#cheer");
           root.querySelectorAll(".opt").forEach(function(b){
             b.disabled=true;
             if(+b.dataset.i===Q.answer) b.classList.add("correct");
           });
-          if(pick===Q.answer){ correct++; }
-          else { btn.classList.add("wrong"); if(cfg.onWrong) cfg.onWrong(i); }
+          if(pick===Q.answer){
+            correct++;
+            if(pet) pet.classList.add("happy");
+            if(cheer){ cheer.textContent=pickCute(PRAISE); cheer.style.color="#16a34a"; }
+            boomConfetti(16);
+            floatPlus(btn);
+          }else{
+            btn.classList.add("wrong");
+            if(pet) pet.classList.add("sad");
+            if(cheer){ cheer.textContent=pickCute(COMFORT); cheer.style.color="#d97706"; }
+            if(cfg.onWrong) cfg.onWrong(i);
+          }
           if(Q.explain) $("#exp").innerHTML='<div class="explain">💡 '+esc(Q.explain)+'</div>';
           $("#next").style.display="block";
         };
@@ -255,15 +301,17 @@ function runQuiz(cfg){
   function showResult(){
     const pct=Math.round(correct/total*100);
     if(cfg.onDone) cfg.onDone(correct,total,pct);
-    const msg=pct===100?'🎉 满分！太棒了！':pct>=80?'👍 很不错，继续保持！':pct>=60?'💪 及格了，再接再厉！':'📚 多复习几遍再来挑战！';
+    const trophy=pct===100?'🏆':pct>=80?'🌟':pct>=60?'💪':'📚';
+    const msg=pct===100?'满分！你就是单词小天才！🎉':pct>=80?'很不错，继续保持！💖':pct>=60?'及格了，再接再厉！🍀':'多复习几遍再来挑战！📝';
     goReplace('<button class="back" id="bk">‹ 返回</button>'+
-      '<div class="card quiz-score"><div class="big">'+pct+'分</div>'+
+      '<div class="card quiz-score"><div class="trophy">'+trophy+'</div><div class="big">'+pct+'分</div>'+
       '<p style="margin:10px 0">答对 '+correct+' / '+total+' 题</p><p>'+msg+'</p></div>'+
       '<button class="btn btn-primary" id="again" style="margin-bottom:10px">再来一次</button>'+
       '<button class="btn btn-ghost" id="done">返回</button>',
     function(){
       $("#bk").onclick=back; $("#done").onclick=back;
       $("#again").onclick=function(){ i=0; correct=0; renderQ(); };
+      if(pct>=60) setTimeout(function(){ boomConfetti(pct===100?60:32); },350);
     });
   }
   renderQ();
@@ -365,7 +413,7 @@ function showMe(){
     '<div class="card"><div class="row" id="mist" style="cursor:pointer;padding:4px 0">'+
       '<div class="grow"><b>📓 错题本</b><div class="d">'+wrongN+' 道错题待复习</div></div><span class="arrow">›</span></div></div>'+
     '<div class="card"><b>关于英语学伴</b>'+
-      '<p class="sub" style="margin:6px 0 0">200 核心单词 · 8 个语法专题 · 闪卡记忆 + 随堂测验<br>学习进度保存在本机，离线可用，无需账号。</p></div>'+
+      '<p class="sub" style="margin:6px 0 0">'+DECKS.length+' 个主题词书 · '+totalWords()+' PET 核心单词 · 8 个语法专题 · 闪卡记忆 + 随堂测验<br>学习进度保存在本机，离线可用，无需账号。</p></div>'+
     '<button class="btn btn-danger" id="reset">清空学习进度</button>',
   function(){
     $("#mist").onclick=showMistakes;

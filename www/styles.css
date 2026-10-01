@@ -125,3 +125,115 @@ body {
 .mistake .q { font-weight: 600; margin-bottom: 4px; }
 .mistake .a { color: var(--ok); font-size: 14px; }
 .mistake .e { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+/* ================= 平板 / iPad 适配 ================= */
+@media (min-width: 700px) {
+  body { font-size: 16px; }
+  #app, #tabbar { max-width: 960px; }
+  #view { padding: 24px 28px calc(100px + env(safe-area-inset-bottom)); }
+  .page-title { font-size: 26px; }
+  .deck-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .deck-grid .item { margin-bottom: 0; }
+  .flash-wrap { width: 100%; max-width: 640px; margin: 0 auto; }
+  .flashcard, .flash-inner { min-height: 380px; }
+  .flash-front .w { font-size: 46px; }
+  #opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  #opts .opt { margin-bottom: 0; }
+  .hero { padding: 30px 26px; }
+  .hero h2 { font-size: 24px; }
+  .quiz-pet { width: 88px; height: 88px; }
+  .stat-grid { gap: 14px; }
+  .quick button { padding: 24px 12px; font-size: 17px; }
+}
+
+/* ================= 测验小可爱：小宠物 ================= */
+.quiz-top { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.quiz-pet { width: 72px; height: 72px; flex: 0 0 auto; }
+.pet-body {
+  position: relative; width: 100%; height: 100%;
+  background: linear-gradient(145deg, #ffd9e8, #c7d8ff);
+  border-radius: 48% 52% 55% 45% / 55% 48% 52% 45%;
+  box-shadow: 0 4px 12px rgba(190,150,255,.35);
+}
+.pet-eye {
+  position: absolute; top: 32%; width: 12px; height: 16px;
+  background: #3a3a4a; border-radius: 50%;
+  animation: pet-blink 4.2s infinite;
+}
+.pet-eye.left { left: 27%; } .pet-eye.right { right: 27%; }
+@keyframes pet-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.08); } }
+.pet-blush { position: absolute; top: 58%; width: 15px; height: 9px; background: #ff9db0; opacity: .75; border-radius: 50%; }
+.pet-blush.left { left: 13%; } .pet-blush.right { right: 13%; }
+.pet-mouth {
+  position: absolute; left: 50%; top: 60%; width: 20px; height: 10px;
+  transform: translateX(-50%);
+  border-bottom: 3px solid #55516b; border-radius: 0 0 20px 20px;
+}
+.quiz-pet.happy .pet-body { animation: pet-bounce .6s ease; }
+.quiz-pet.happy .pet-mouth { height: 12px; border-bottom-width: 4px; }
+@keyframes pet-bounce {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-14px) scale(1.06); }
+  60% { transform: translateY(0) scale(.95); }
+  100% { transform: translateY(0) scale(1); }
+}
+.quiz-pet.sad .pet-body { animation: pet-sad .5s ease; }
+.quiz-pet.sad .pet-mouth {
+  border-bottom: none; border-top: 3px solid #55516b;
+  border-radius: 20px 20px 0 0; top: 64%;
+}
+@keyframes pet-sad {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px) rotate(-5deg); }
+  75% { transform: translateX(7px) rotate(5deg); }
+}
+
+/* ================= 测验小可爱：动效 ================= */
+.opt { animation: opt-pop .35s cubic-bezier(.34,1.56,.64,1) backwards; }
+@keyframes opt-pop {
+  from { opacity: 0; transform: translateY(14px) scale(.95); }
+  to { opacity: 1; transform: none; }
+}
+.opt.correct {
+  border-color: var(--ok); background: #f0fdf4;
+  box-shadow: 0 0 0 5px rgba(22,163,74,.16);
+  animation: opt-yay .5s ease;
+}
+@keyframes opt-yay {
+  0% { transform: scale(1); } 40% { transform: scale(1.045); } 100% { transform: scale(1); }
+}
+.opt.wrong { animation: opt-no .45s ease; }
+@keyframes opt-no {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-9px); } 40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); } 80% { transform: translateX(6px); }
+}
+.cheer { text-align: center; font-size: 15px; font-weight: 700; margin: 2px 0 10px; min-height: 24px; }
+.cheer:not(:empty) { animation: opt-pop .3s ease; }
+.float-plus {
+  position: fixed; z-index: 99; font-weight: 800; color: #f59e0b; font-size: 20px;
+  pointer-events: none; animation: float-up 1s ease-out forwards;
+  text-shadow: 0 2px 6px rgba(245,158,11,.4);
+}
+@keyframes float-up {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-64px) scale(1.15); }
+}
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 98; overflow: hidden; }
+.cf { position: absolute; top: -34px; animation-name: cf-fall; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes cf-fall { to { transform: translateY(112vh) rotate(420deg); } }
+.quiz-progress { position: relative; height: 14px; background: #eceaff; border-radius: 10px; margin-top: 6px; }
+.quiz-progress .fill {
+  height: 100%; width: 0; border-radius: 10px;
+  background: linear-gradient(90deg, #f9a8d4, #c4b5fd, #93c5fd);
+  transition: width .45s ease;
+}
+.quiz-progress .paw {
+  position: absolute; top: -10px; font-size: 20px;
+  transform: translateX(-50%); transition: left .45s ease;
+}
+.trophy { font-size: 64px; display: inline-block; animation: trophy-in .7s cubic-bezier(.34,1.56,.64,1); }
+@keyframes trophy-in {
+  from { transform: scale(0) rotate(-25deg); }
+  to { transform: scale(1) rotate(0); }
+}
